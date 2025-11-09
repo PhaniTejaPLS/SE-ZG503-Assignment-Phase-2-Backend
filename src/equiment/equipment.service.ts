@@ -28,24 +28,56 @@ export class EquipmentService {
 
 getEquipmentByQuery(queryParamObject) {
   console.log('Query Parameters:', queryParamObject);
+  
+  // Initialize query builder
   const qb = this.equimentRepository.createQueryBuilder('equipment');
 
-  if(queryParamObject.name === ''){
+  // Clean up invalid or empty query parameters
+  this.cleanQueryParameters(queryParamObject);
+
+  // Apply filters based on cleaned parameters
+  this.applyNameFilter(qb, queryParamObject);
+  this.applyAvailableQuantityFilter(qb, queryParamObject);
+  this.applyConditionFilter(qb, queryParamObject);
+
+  return qb.getMany();
+}
+
+/**
+ * Removes invalid or empty values from query parameters
+ */
+private cleanQueryParameters(queryParamObject: any): void {
+  // Remove empty name parameter
+  if (queryParamObject.name === '') {
     delete queryParamObject.name;
   }
 
-  if(queryParamObject.condition === 'All' || queryParamObject.condition === 'undefined'){
+  // Remove condition parameter if it's 'All' or 'undefined'
+  if (queryParamObject.condition === 'All' || queryParamObject.condition === 'undefined') {
     delete queryParamObject.condition;
   }
 
-  if(queryParamObject.availablequantity === 'undefined'){
+  // Remove availablequantity parameter if it's 'undefined'
+  if (queryParamObject.availablequantity === 'undefined') {
     delete queryParamObject.availablequantity;
   }
+}
 
+/**
+ * Applies name filter using LIKE search (case-insensitive partial match)
+ */
+private applyNameFilter(qb: any, queryParamObject: any): void {
   if (queryParamObject.name) {
-    qb.andWhere('equipment.name LIKE :name', { name: `%${queryParamObject.name}%` });
+    qb.andWhere('equipment.name LIKE :name', { 
+      name: `%${queryParamObject.name}%` 
+    });
   }
+}
 
+/**
+ * Applies available quantity filter using BETWEEN (0 to specified max value)
+ */
+private applyAvailableQuantityFilter(qb: any, queryParamObject: any): void {
   if (queryParamObject.availablequantity) {
     console.log('Available Quantity Filter Applied:', queryParamObject);
     qb.andWhere('equipment.availablequantity BETWEEN :min AND :max', { 
@@ -53,12 +85,17 @@ getEquipmentByQuery(queryParamObject) {
       max: parseInt(queryParamObject.availablequantity) 
     });
   }
+}
 
+/**
+ * Applies condition filter using exact match
+ */
+private applyConditionFilter(qb: any, queryParamObject: any): void {
   if (queryParamObject.condition) {
-    qb.andWhere('equipment.condition = :condition', { condition: queryParamObject.condition });
+    qb.andWhere('equipment.condition = :condition', { 
+      condition: queryParamObject.condition 
+    });
   }
-
-  return qb.getMany();
 }
 
 
